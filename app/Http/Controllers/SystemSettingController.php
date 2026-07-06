@@ -62,16 +62,35 @@ class SystemSettingController extends Controller
         $changed = ['app_name' => $validated['app_name']];
 
         if ($request->hasFile('logo')) {
-            // Remove the previous logo file if one was uploaded before.
+            $uploadsDir = dirname(__DIR__, 3) . '/public/uploads';
+
+            // Fail loudly (instead of saving a broken path) if the uploads
+            // directory is not writable on this server — the usual cause of a
+            // logo that "uploads" but never displays on a live host.
+            if (!is_dir($uploadsDir . '/branding') && !@mkdir($uploadsDir . '/branding', 0775, true) && !is_dir($uploadsDir . '/branding')) {
+                return redirect()->back()->withErrors([
+                    'logo' => 'Could not save the logo: the uploads folder is not writable. On the server run: chmod -R 775 public/uploads',
+                ]);
+            }
+
+            $path = $request->file('logo')->store('branding');
+            $absolute = $uploadsDir . '/' . ltrim($path, '/');
+
+            // Confirm the file actually landed on disk before committing the setting.
+            if (!is_file($absolute)) {
+                return redirect()->back()->withErrors([
+                    'logo' => 'Could not save the logo file. Check that public/uploads is writable by the web server.',
+                ]);
+            }
+
+            // New logo is safely stored — now remove the previous one.
             $existing = SystemSetting::get('logo');
-            if ($existing) {
-                $old = dirname(__DIR__, 3) . '/public/uploads/' . ltrim($existing, '/');
+            if ($existing && $existing !== $path) {
+                $old = $uploadsDir . '/' . ltrim($existing, '/');
                 if (is_file($old)) {
                     @unlink($old);
                 }
             }
-
-            $path = $request->file('logo')->store('branding');
 
             SystemSetting::updateOrCreate(
                 ['key' => 'logo'],

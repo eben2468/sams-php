@@ -13,6 +13,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SemesterController;
@@ -24,6 +25,10 @@ use App\Http\Controllers\UserController;
 $router->get('/', function () {
     return Auth::check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
+
+// Public media proxy — streams files from public/uploads through PHP so that
+// logos and photos display even on hosts that don't serve uploads statically.
+$router->get('/media', [MediaController::class, 'show'], 'media');
 
 // Guest routes
 $router->group(['middleware' => ['guest']], function ($router) {
@@ -39,6 +44,8 @@ $router->group(['middleware' => ['auth']], function ($router) {
     $router->get('/dashboard', [DashboardController::class, 'index'], 'dashboard');
 
     // Students
+    // Registered before the resource route so it is not captured by GET /students/{student}.
+    $router->get('/students/sample-csv', [StudentController::class, 'sampleCsv'], 'students.sample');
     $router->resource('students', StudentController::class);
     $router->post('/students/import', [StudentController::class, 'import'], 'students.import');
 

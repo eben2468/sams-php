@@ -99,7 +99,7 @@
                             <div class="flex items-center min-w-[200px]">
                                 <div class="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden shadow-soft">
                                     <?php if ($student->photo): ?>
-                                        <img src="<?= e(asset('uploads/' . $student->photo)) ?>" alt="<?= e($student->full_name) ?>" class="w-full h-full object-cover">
+                                        <img src="<?= e(media($student->photo)) ?>" alt="<?= e($student->full_name) ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
                                         <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold"><?= e(substr($student->full_name, 0, 1)) ?></div>
                                     <?php endif; ?>
@@ -189,7 +189,7 @@
                 <div class="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                     <p class="text-xs font-semibold text-blue-900 mb-2">Required CSV Columns:</p>
                     <p class="text-xs text-blue-700 leading-relaxed">student_id, first_name, last_name, level, faculty, department_id, program_id</p>
-                    <a href="<?= e(asset('samples/students-sample.csv')) ?>" download class="mt-3 inline-flex items-center space-x-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors">
+                    <a href="<?= e(route('students.sample')) ?>" download class="mt-3 inline-flex items-center space-x-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         <span>Download sample CSV</span>
                     </a>

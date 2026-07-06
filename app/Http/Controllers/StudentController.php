@@ -184,6 +184,31 @@ class StudentController extends Controller
         return redirect()->route('students.index')->with('success', 'Student deleted successfully.');
     }
 
+    /**
+     * Stream the import template as a download. Generated in memory so it works
+     * on any host regardless of how static files under public/ are served.
+     */
+    public function sampleCsv()
+    {
+        $rows = [
+            ['student_id', 'first_name', 'last_name', 'level', 'faculty', 'department_id', 'program_id'],
+            ['VVU2024001', 'Ama', 'Mensah', '100', '', '1', '1'],
+            ['VVU2024002', 'Kwame', 'Osei', '200', '', '1', '2'],
+            ['VVU2024003', 'Efua', 'Boateng', '300', '', '2', '3'],
+            ['VVU2024004', 'Yaw', 'Owusu', '400', '', '2', '4'],
+        ];
+
+        $handle = fopen('php://temp', 'r+');
+        foreach ($rows as $row) {
+            fputcsv($handle, $row);
+        }
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return response()->download($csv, 'students-sample.csv', 'text/csv; charset=UTF-8');
+    }
+
     public function import(Request $request)
     {
         $request->validate([

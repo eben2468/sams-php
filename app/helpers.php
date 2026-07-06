@@ -101,6 +101,20 @@ if (!function_exists('asset')) {
     }
 }
 
+if (!function_exists('media')) {
+    /**
+     * URL for a file stored under public/uploads, served through the PHP
+     * front controller. Works even on hosts that do not serve public/uploads
+     * statically. $relative is the path relative to uploads, e.g.
+     * "branding/logo.png" or "students/abc.jpg".
+     */
+    function media(string $relative): string
+    {
+        $relative = ltrim(str_replace('\\', '/', $relative), '/');
+        return base_uri() . '/media?f=' . rawurlencode($relative);
+    }
+}
+
 if (!function_exists('route')) {
     function route(string $name, $parameters = []): string
     {

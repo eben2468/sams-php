@@ -52,7 +52,7 @@
                     <label for="photo" class="block text-sm font-semibold text-gray-700 mb-2">Photo</label>
                     <?php if ($student->photo): ?>
                     <div class="mb-3 flex items-center space-x-4">
-                        <img src="<?= e(asset('uploads/' . $student->photo)) ?>" alt="<?= e($student->full_name) ?>" class="w-20 h-20 rounded-lg object-cover shadow-soft">
+                        <img src="<?= e(media($student->photo)) ?>" alt="<?= e($student->full_name) ?>" class="w-20 h-20 rounded-lg object-cover shadow-soft">
                         <div>
                             <p class="text-sm text-gray-600">Current photo</p>
                             <p class="text-xs text-gray-500">Upload a new photo to replace</p>
