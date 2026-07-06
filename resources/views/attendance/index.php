@@ -91,16 +91,49 @@
             <h3 class="text-2xl font-bold text-gray-900">Card Scanners</h3>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <button @click="startScanner('barcode')" class="flex items-center justify-center space-x-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span class="text-lg">Scan Barcode/QR</span>
             </button>
 
+            <button @click="captureIdPhoto()" class="relative flex items-center justify-center space-x-3 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md">
+                <span class="absolute -top-2 -right-2 bg-amber-400 text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded-full shadow">CLEAREST</span>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span class="text-lg">Capture ID Photo</span>
+            </button>
+
             <button @click="startScanner('ocr')" class="flex items-center justify-center space-x-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 shadow-md">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
-                <span class="text-lg">Scan ID Card Text</span>
+                <span class="text-lg">Scan ID Text (Live)</span>
             </button>
+        </div>
+        <p class="text-sm text-gray-500 mb-6">On a phone, <span class="font-semibold text-green-700">Capture ID Photo</span> opens your camera to take a sharp, high-resolution picture — the most reliable way to read an ID number.</p>
+
+        <!-- Native camera / file input for high-resolution still capture -->
+        <input type="file" accept="image/*" capture="environment" x-ref="idPhoto" @change="onIdPhotoSelected($event)" class="hidden">
+
+        <!-- Captured-photo result -->
+        <div x-show="captureMode" x-cloak class="mb-6">
+            <div class="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <template x-if="capturePreview">
+                    <img :src="capturePreview" alt="Captured ID" class="max-h-56 rounded-lg border border-gray-200 shadow mb-3">
+                </template>
+                <div x-show="captureBusy" class="flex items-center space-x-2 text-blue-600 font-semibold">
+                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="captureStatus || 'Reading ID from photo…'"></span>
+                </div>
+                <div x-show="!captureBusy && captureStatus" class="text-center font-semibold" :class="{
+                    'text-green-600': captureStatusType === 'success',
+                    'text-orange-600': captureStatusType === 'warning',
+                    'text-red-600': captureStatusType === 'error',
+                    'text-blue-600': captureStatusType === 'info'
+                }" x-text="captureStatus"></div>
+                <button x-show="!captureBusy" @click="captureIdPhoto()" class="mt-3 inline-flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Capture another</span>
+                </button>
+            </div>
         </div>
 
         <div x-show="isScanning" x-cloak>
@@ -299,6 +332,102 @@ function preprocessCardFrame(video) {
     return canvas;
 }
 
+/** Load a selected File into a fully-decoded HTMLImageElement. */
+function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            if (img.decode) {
+                img.decode().then(() => resolve(img)).catch(() => resolve(img)).finally(() => URL.revokeObjectURL(url));
+            } else {
+                URL.revokeObjectURL(url);
+                resolve(img);
+            }
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+        img.src = url;
+    });
+}
+
+/**
+ * Preprocess a full still photo of an ID card for OCR. Unlike the live-frame
+ * version this keeps (almost) the whole framed image, scales it to a good OCR
+ * resolution, then either binarises (mode 'binary') or just boosts contrast in
+ * grayscale (mode 'gray').
+ */
+function preprocessCardImage(img, mode) {
+    mode = mode || 'binary';
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+
+    const cropW = Math.round(iw * 0.98);
+    const cropH = Math.round(ih * 0.98);
+    const sx = Math.round((iw - cropW) / 2);
+    const sy = Math.round((ih - cropH) / 2);
+
+    // Normalise to ~1600px wide: upscale small photos, shrink huge ones.
+    const scale = Math.min(2.5, Math.max(0.3, 1600 / cropW));
+    const w = Math.round(cropW * scale);
+    const h = Math.round(cropH * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, w, h);
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const px = imgData.data;
+    const n = w * h;
+
+    const gray = new Uint8ClampedArray(n);
+    const hist = new Array(256).fill(0);
+    let min = 255, max = 0;
+    for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+        const g = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0;
+        gray[j] = g;
+        if (g < min) min = g;
+        if (g > max) max = g;
+    }
+    const range = Math.max(1, max - min);
+    for (let j = 0; j < n; j++) {
+        const s = ((gray[j] - min) * 255 / range) | 0;
+        gray[j] = s;
+        hist[s]++;
+    }
+
+    if (mode === 'gray') {
+        for (let i = 0, j = 0; i < px.length; i += 4, j++) { px[i] = px[i + 1] = px[i + 2] = gray[j]; }
+        ctx.putImageData(imgData, 0, 0);
+        return canvas;
+    }
+
+    // Otsu threshold.
+    let sum = 0;
+    for (let t = 0; t < 256; t++) sum += t * hist[t];
+    let sumB = 0, wB = 0, maxVar = -1, threshold = 128;
+    for (let t = 0; t < 256; t++) {
+        wB += hist[t];
+        if (wB === 0) continue;
+        const wF = n - wB;
+        if (wF === 0) break;
+        sumB += t * hist[t];
+        const mB = sumB / wB;
+        const mF = (sum - sumB) / wF;
+        const between = wB * wF * (mB - mF) * (mB - mF);
+        if (between > maxVar) { maxVar = between; threshold = t; }
+    }
+    const cut = threshold + 8;
+    for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+        const v = gray[j] > cut ? 255 : 0;
+        px[i] = px[i + 1] = px[i + 2] = v;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+}
+
 function attendanceManager() {
     return {
         selectedEventId: <?= $selectedEvent->id ?? 'null' ?>,
@@ -323,6 +452,11 @@ function attendanceManager() {
         ocrTicks: 0,
         torchAvailable: false,
         torchOn: false,
+        captureMode: false,
+        capturePreview: null,
+        captureBusy: false,
+        captureStatus: '',
+        captureStatusType: 'info',
         attendances: <?= json_encode($attendances ? $attendances->items() : []) ?>,
         filteredAttendances: <?= json_encode($attendances ? $attendances->items() : []) ?>,
         searchTerm: '',
@@ -579,6 +713,77 @@ function attendanceManager() {
             } finally {
                 this.ocrBusy = false;
             }
+        },
+
+        // --- High-resolution still capture (native camera on phones) ---------
+        captureIdPhoto() {
+            if (!this.selectedEventId) { this.showStatus('Please select an event first.', 'error'); return; }
+            // Stop the live scanner if it's running so the camera is free.
+            if (this.isScanning) { this.stopScanner(); }
+            this.captureStatus = '';
+            // Reset so re-selecting the same file still fires @change.
+            if (this.$refs.idPhoto) { this.$refs.idPhoto.value = ''; this.$refs.idPhoto.click(); }
+        },
+
+        async onIdPhotoSelected(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            this.captureMode = true;
+            this.captureBusy = true;
+            if (this.capturePreview) { try { URL.revokeObjectURL(this.capturePreview); } catch (e) {} }
+            this.capturePreview = URL.createObjectURL(file);
+            this.captureStatus = 'Reading ID from photo…';
+            this.captureStatusType = 'info';
+
+            try {
+                await this.ensureOcrWorker();
+            } catch (err) {
+                console.error('OCR init error:', err);
+                this.captureBusy = false;
+                this.captureStatus = 'Could not load the text-recognition engine. Check your connection and try again.';
+                this.captureStatusType = 'error';
+                return;
+            }
+
+            let img;
+            try {
+                img = await loadImageFromFile(file);
+            } catch (err) {
+                this.captureBusy = false;
+                this.captureStatus = 'Could not read that image. Please try again.';
+                this.captureStatusType = 'error';
+                return;
+            }
+
+            // Try the binarised image first, then a plain high-contrast grayscale
+            // fallback (some cards read better without hard thresholding).
+            let studentId = null;
+            for (const mode of ['binary', 'gray']) {
+                try {
+                    const canvas = preprocessCardImage(img, mode);
+                    const { data } = await this.ocrWorker.recognize(canvas);
+                    studentId = this.extractStudentId((data && data.text) || '');
+                    if (studentId) break;
+                } catch (err) {
+                    console.error('OCR (capture) error:', err);
+                }
+            }
+
+            this.captureBusy = false;
+
+            if (!studentId) {
+                this.captureStatus = 'No ID number found in the photo. Fill the frame with the ID, avoid glare, and keep it in focus — then capture again.';
+                this.captureStatusType = 'error';
+                this.playSound('error');
+                return;
+            }
+
+            this.captureStatus = `Detected ID: ${studentId} — marking attendance…`;
+            this.captureStatusType = 'success';
+            // Bypass the live-scan cooldown for deliberate captures.
+            this.lastScannedId = null;
+            this.markAttendance(studentId, 'ocr_scan');
         },
 
         processScannedData(scannedText, method = 'scan') {
