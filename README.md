@@ -1,404 +1,161 @@
-# SAMS — Student Attendance Management System (PHP/Laravel Version)
+# SAMS — Student Attendance Management System (Plain PHP)
 
 > Valley View University | Digital Attendance Tracking System
 
-## Overview
-
-SAMS is a full-stack web application for digitally recording student attendance at church services and university events. This is the **PHP/Laravel version** converted from the original React.js/Node.js stack.
+A full-stack web application for digitally recording student attendance at church
+services and university events. This is the **plain PHP version** — it was
+converted from Laravel to a small, self-contained MVC framework with **no
+framework dependency**.
 
 ## Tech Stack
 
-- **Backend:** Laravel 11 (PHP 8.2+)
-- **Frontend:** Blade Templates + Tailwind CSS v3 + Alpine.js
-- **Database:** MySQL 8.0+ (Eloquent ORM)
-- **Auth:** Laravel Session Authentication
-- **Scanner:** html5-qrcode (JavaScript)
-- **Reports:** DomPDF + Laravel Excel
-- **Charts:** Chart.js
+- **Backend:** Plain PHP 8.2+ (custom front-controller MVC + PDO)
+- **Frontend:** Plain-PHP templates + Tailwind CSS (Play CDN) + Alpine.js (CDN)
+- **Database:** MySQL / MariaDB (PDO)
+- **Auth:** Native PHP sessions + role-based middleware
+- **Scanner:** html5-qrcode + Tesseract.js (CDN)
+- **PDF reports:** dompdf
+- **Excel reports:** native CSV export
+- **Charts:** Chart.js (CDN)
 
-## Prerequisites
+There is **no build step** — no Node, npm, Vite, or Composer is required to run
+the app. CSS/JS are served from `public/` and the CDNs.
 
-- PHP 8.2 or higher
-- Composer 2.x
-- MySQL 8.0+
-- Node.js 18+ (for asset compilation)
-- XAMPP (or standalone MySQL/Apache)
+## Requirements
 
-## Setup Instructions
-
-### 1. Create MySQL Database
-
-```sql
-CREATE DATABASE sams_php_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 2. Install Dependencies
-
-```bash
-# Install PHP dependencies
-composer install
-
-# Install Node dependencies (for Tailwind CSS)
-npm install
-```
-
-### 3. Configure Environment
-
-```bash
-# Copy environment file
-copy .env.example .env
-
-# Generate application key
-php artisan key:generate
-```
-
-Edit `.env` file:
-```env
-APP_NAME="SAMS - Student Attendance Management System"
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=sams_php_db
-DB_USERNAME=root
-DB_PASSWORD=
-
-SESSION_DRIVER=database
-SESSION_LIFETIME=480
-```
-
-### 4. Set Up Database
-
-```bash
-# Run migrations
-php artisan migrate
-
-# Seed database with sample data
-php artisan db:seed
-```
-
-### 5. Create Storage Link
-
-```bash
-php artisan storage:link
-```
-
-### 6. Compile Assets
-
-```bash
-# Development
-npm run dev
-
-# Production
-npm run build
-```
-
-### 7. Start Development Server
-
-```bash
-php artisan serve
-```
-
-Visit: **http://localhost:8000**
-
-## Login Credentials
-
-| Role       | Email                    | Password      |
-|------------|--------------------------|---------------|
-| Admin      | admin@vvu.edu.gh         | admin123      |
-| Officer 1  | officer1@vvu.edu.gh      | officer123    |
-| Officer 2  | officer2@vvu.edu.gh      | officer123    |
-| Supervisor | supervisor@vvu.edu.gh    | supervisor123 |
-
-## Features
-
-- ✅ Role-based access control (Admin, Officer, Supervisor)
-- ✅ QR/Barcode scanning for attendance
-- ✅ Manual ID entry with verification flagging
-- ✅ Real-time student verification
-- ✅ Event management with officer assignment
-- ✅ Student management with CSV import
-- ✅ Attendance reports (PDF/Excel export)
-- ✅ Departmental attendance analytics
-- ✅ Complete audit trail
-- ✅ Mobile-responsive design
-- ✅ Dashboard with real-time statistics
+- PHP 8.2+ with `pdo_mysql`, `mbstring`, `gd`, `dom`, `fileinfo`
+- MySQL 8 / MariaDB 10.4+
+- XAMPP (or Apache + PHP + MySQL)
 
 ## Project Structure
 
 ```
 /sams-php
 ├── app/
-│   ├── Http/
-│   │   ├── Controllers/      ← All controllers
-│   │   ├── Middleware/       ← Custom middleware
-│   │   └── Requests/         ← Form validation
-│   ├── Models/               ← Eloquent models
-│   └── Services/             ← Business logic
+│   ├── Core/                ← mini-framework (Router, Model, QueryBuilder,
+│   │                           Database, Request, Response, View, Auth,
+│   │                           Validator, Session, Collection, Paginator, …)
+│   ├── Http/Controllers/    ← controllers
+│   ├── Http/Middleware/     ← auth / guest / role middleware
+│   ├── Models/              ← PDO-backed active-record models
+│   ├── Exports/             ← CSV export
+│   ├── autoload.php         ← PSR-4 + Composer ClassLoader (Carbon, dompdf)
+│   └── helpers.php          ← global helpers (route, auth, view, e, old, …)
+├── config/config.php        ← reads .env
 ├── database/
-│   ├── migrations/           ← Database schema
-│   └── seeders/              ← Sample data
-├── resources/
-│   ├── views/                ← Blade templates
-│   │   ├── layouts/          ← Layout files
-│   │   ├── auth/             ← Login page
-│   │   ├── dashboard/        ← Dashboard
-│   │   ├── students/         ← Student management
-│   │   ├── events/           ← Event management
-│   │   ├── attendance/       ← Attendance marking
-│   │   ├── reports/          ← Reports
-│   │   ├── users/            ← User management
-│   │   ├── audit/            ← Audit logs
-│   │   └── settings/         ← System settings
-│   └── css/                  ← Stylesheets
-├── routes/
-│   ├── web.php               ← Web routes
-│   └── api.php               ← API routes
-├── public/
-│   ├── css/                  ← Compiled CSS
-│   ├── js/                   ← Compiled JS
-│   └── uploads/              ← User uploads
-├── .env                      ← Environment config
-├── composer.json             ← PHP dependencies
-├── package.json              ← Node dependencies
-└── README.md                 ← This file
+│   ├── schema.sql           ← database schema
+│   ├── seed.php             ← demo-data seeder
+│   └── install.php          ← creates DB + schema + seed (one step)
+├── resources/views/         ← plain-PHP templates (layout/section/yield)
+├── routes/                  ← web.php + api.php
+├── public/                  ← document root (index.php front controller)
+│   ├── css/app.css          ← custom styles
+│   ├── js/app.js            ← global JS helpers
+│   └── uploads/             ← student photos
+├── vendor/                  ← Carbon + dompdf (Composer, optional to refresh)
+├── .env                     ← environment config
+└── composer.json
 ```
 
-## API Endpoints
+## Setup
 
-All API endpoints are prefixed with `/api/`
+### 1. Configure the environment
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET /api/auth/me` - Get current user
-
-### Students
-- `GET /api/students` - List all students
-- `POST /api/students` - Create student (Admin)
-- `GET /api/students/{id}` - Get student details
-- `PUT /api/students/{id}` - Update student (Admin)
-- `DELETE /api/students/{id}` - Delete student (Admin)
-- `POST /api/students/import` - Import students from CSV (Admin)
-
-### Events
-- `GET /api/events` - List all events
-- `POST /api/events` - Create event (Admin)
-- `GET /api/events/{id}` - Get event details
-- `PUT /api/events/{id}` - Update event (Admin)
-- `DELETE /api/events/{id}` - Delete event (Admin)
-- `GET /api/events/active` - Get active events
-
-### Attendance
-- `POST /api/attendance/mark` - Mark attendance (Officer)
-- `GET /api/attendance/event/{id}` - Get event attendance
-- `GET /api/attendance/student/{id}` - Get student attendance
-- `GET /api/attendance/absentees/{eventId}` - Get absentees
-- `DELETE /api/attendance/{id}` - Delete attendance record (Admin)
-
-### Reports
-- `GET /api/reports/student/{id}` - Student attendance report
-- `GET /api/reports/event/{id}` - Event attendance report
-- `GET /api/reports/export/pdf` - Export PDF report (Admin/Supervisor)
-- `GET /api/reports/export/excel` - Export Excel report (Admin/Supervisor)
-
-### Dashboard
-- `GET /api/dashboard/stats` - Get dashboard statistics (Admin/Supervisor)
-
-### Users
-- `GET /api/users` - List all users (Admin)
-- `POST /api/users` - Create user (Admin)
-- `PUT /api/users/{id}` - Update user (Admin)
-- `DELETE /api/users/{id}` - Delete user (Admin)
-
-### Audit Logs
-- `GET /api/audit-logs` - Get audit logs (Admin)
-
-### Departments & Programs
-- `GET /api/departments` - List departments
-- `POST /api/departments` - Create department (Admin)
-- `GET /api/programs` - List programs
-- `POST /api/programs` - Create program (Admin)
-
-### System Settings
-- `GET /api/settings` - Get system settings (Admin)
-- `PUT /api/settings` - Update settings (Admin)
-
-## Web Routes
-
-- `GET /` - Redirect to login or dashboard
-- `GET /login` - Login page
-- `POST /login` - Process login
-- `POST /logout` - Logout
-
-### Protected Routes (Requires Authentication)
-- `GET /dashboard` - Dashboard
-- `GET /students` - Student management
-- `GET /events` - Event management
-- `GET /attendance` - Attendance marking
-- `GET /reports` - Reports
-- `GET /users` - User management (Admin only)
-- `GET /audit-logs` - Audit logs (Admin only)
-- `GET /settings` - System settings (Admin only)
-
-## Middleware
-
-### Authentication
-- `auth` - Requires user to be logged in
-- `guest` - Requires user to be logged out
-
-### Role-Based Access
-- `role:admin` - Admin only
-- `role:admin,supervisor` - Admin or Supervisor
-- `role:admin,officer` - Admin or Officer
-
-## Database Schema
-
-### Users
-- id, name, email, password, role, is_active, timestamps
-
-### Students
-- id, student_id, first_name, last_name, photo, program_id, level, department_id, faculty, is_active, timestamps
-
-### Events
-- id, name, type, start_time, end_time, description, created_by, timestamps
-
-### Attendance
-- id, event_id, student_id, marked_by, method, is_verified, timestamp
-
-### Departments
-- id, name, timestamps
-
-### Programs
-- id, name, department_id, timestamps
-
-### Event Officers
-- id, event_id, user_id
-
-### Audit Logs
-- id, action, performed_by, target_type, target_id, metadata, timestamp
-
-### System Settings
-- key, value, updated_at
-
-## Development Commands
+Copy and edit `.env`:
 
 ```bash
-# Run migrations
-php artisan migrate
-
-# Rollback migrations
-php artisan migrate:rollback
-
-# Seed database
-php artisan db:seed
-
-# Clear cache
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-
-# Generate IDE helper (optional)
-php artisan ide-helper:generate
-
-# Run tests
-php artisan test
-
-# Code formatting
-./vendor/bin/pint
+cp .env.example .env
 ```
-
-## Production Deployment
-
-### 1. Optimize Application
-
-```bash
-# Install production dependencies
-composer install --optimize-autoloader --no-dev
-
-# Compile assets
-npm run build
-
-# Cache configuration
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-### 2. Set Environment
 
 ```env
-APP_ENV=production
-APP_DEBUG=false
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=sams_php_db
+DB_USERNAME=root
+DB_PASSWORD=
 ```
 
-### 3. Set Permissions
+### 2. Create the database, schema and demo data
+
+Make sure MySQL is running, then run the one-step installer:
 
 ```bash
-chmod -R 755 storage bootstrap/cache
+php database/install.php
 ```
 
-### 4. Configure Web Server
+This creates the `sams_php_db` database, loads `schema.sql`, and seeds demo
+data. (You can re-seed any time with `php database/seed.php`.)
 
-Point document root to `/public` directory.
+### 3. Run the app
 
-**Apache (.htaccess already included)**
+**With XAMPP** (project in `htdocs/sams-php`): start Apache + MySQL and visit:
 
-**Nginx:**
-```nginx
-location / {
-    try_files $uri $uri/ /index.php?$query_string;
-}
+```
+http://localhost/sams-php/
 ```
 
-## Differences from Node.js Version
+The root `.htaccess` forwards requests into `public/`, and `public/.htaccess`
+routes everything through the front controller. (`mod_rewrite` must be enabled —
+it is by default in XAMPP.)
 
-| Feature | Node.js/React | PHP/Laravel |
-|---------|---------------|-------------|
-| Routing | Express routes | Laravel routes |
-| ORM | Prisma | Eloquent |
-| Templates | React JSX | Blade |
-| Auth | JWT | Session |
-| Validation | Manual | Form Requests |
-| File Upload | Multer | Laravel Storage |
-| PDF | PDFKit | DomPDF |
-| Excel | ExcelJS | Laravel Excel |
-| Real-time | N/A | Laravel Echo (optional) |
+**Or with PHP's built-in server** (document root = `public/`):
+
+```bash
+php -S localhost:8000 -t public
+# then visit http://localhost:8000
+```
+
+## Login Credentials
+
+| Role       | Email                  | Password      |
+|------------|------------------------|---------------|
+| Admin      | admin@vvu.edu.gh       | admin123      |
+| Officer    | officer1@vvu.edu.gh    | officer123    |
+| Supervisor | supervisor@vvu.edu.gh  | supervisor123 |
+
+## Features
+
+- ✅ Role-based access control (Admin, Officer, Supervisor)
+- ✅ QR/Barcode scanning + OCR ID scanning for attendance
+- ✅ Manual ID entry with verification flagging
+- ✅ Event management with officer assignment & semesters
+- ✅ Student management with CSV import
+- ✅ Attendance reports (PDF via dompdf, Excel via CSV)
+- ✅ Departmental attendance analytics & dashboard charts
+- ✅ Complete audit trail
+- ✅ Mobile-responsive design
+- ✅ JSON API (`/api/...`) mirroring the web features
+
+## Optional: refresh Composer dependencies
+
+`vendor/` already contains Carbon and dompdf, so the app runs as-is. If you want
+to slim `vendor/` down to just the plain-PHP dependencies:
+
+```bash
+composer update
+```
+
+## How the conversion maps to the old Laravel version
+
+| Laravel                         | Plain PHP replacement                         |
+|---------------------------------|-----------------------------------------------|
+| Routing (`Route::`)             | `App\Core\Router` (+ `routes/web.php`, `api.php`) |
+| Eloquent                        | `App\Core\Model` + `QueryBuilder` (PDO)       |
+| Blade                           | `App\Core\View` (plain-PHP `layout/section/yield`) |
+| Form Requests / `$request->validate` | `App\Core\Validator`                     |
+| Auth + Sanctum                  | `App\Core\Auth` (PHP sessions)                |
+| Migrations / Seeders            | `database/schema.sql` + `database/seed.php`   |
+| `barryvdh/laravel-dompdf`       | `dompdf/dompdf` directly                       |
+| `maatwebsite/excel`             | native CSV (`App\Exports\AttendanceExport`)   |
+| Vite / Tailwind build           | Tailwind Play CDN + `public/css/app.css`      |
 
 ## Troubleshooting
 
-### Database Connection Error
-- Verify MySQL is running
-- Check `.env` database credentials
-- Ensure database exists
-
-### Permission Errors
-```bash
-chmod -R 755 storage bootstrap/cache
-```
-
-### Asset Compilation Errors
-```bash
-npm install
-npm run build
-```
-
-### Session Issues
-```bash
-php artisan session:table
-php artisan migrate
-```
-
-## Support
-
-For issues or questions, contact the development team at Valley View University.
+- **DB connection error** — verify MySQL is running and `.env` credentials.
+- **403/404 on every page** — ensure `mod_rewrite` is enabled and you are
+  visiting through Apache (or use `php -S ... -t public`).
+- **Reset data** — `php database/install.php`.
 
 ## License
 
 © 2026 Valley View University — SAMS
-
----
-
-**Note:** This is the PHP/Laravel version of SAMS. For the original Node.js/React version, see the parent directory.

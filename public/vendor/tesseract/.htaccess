@@ -1,0 +1,10 @@
+# Serve the Tesseract engine assets correctly.
+AddType application/wasm .wasm
+AddType application/javascript .js
+
+# The .traineddata.gz is decompressed by tesseract.js itself, so it must be
+# delivered verbatim — do NOT let Apache tag it with Content-Encoding: gzip.
+<IfModule mod_mime.c>
+    RemoveEncoding .gz
+    AddType application/octet-stream .gz
+</IfModule>
