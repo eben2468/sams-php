@@ -366,8 +366,9 @@ function preprocessCardImage(img, mode) {
     const sx = Math.round((iw - cropW) / 2);
     const sy = Math.round((ih - cropH) / 2);
 
-    // Normalise to ~1600px wide: upscale small photos, shrink huge ones.
-    const scale = Math.min(2.5, Math.max(0.3, 1600 / cropW));
+    // Normalise to ~2200px wide: upscale small photos (so tiny ID digits get
+    // enough pixels), shrink oversized ones.
+    const scale = Math.min(3.0, Math.max(0.3, 2200 / cropW));
     const w = Math.round(cropW * scale);
     const h = Math.round(cropH * scale);
 
@@ -377,6 +378,9 @@ function preprocessCardImage(img, mode) {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, w, h);
+
+    // 'raw' = just the scaled colour image (some cards read better untouched).
+    if (mode === 'raw') { return canvas; }
 
     const imgData = ctx.getImageData(0, 0, w, h);
     const px = imgData.data;
@@ -756,24 +760,12 @@ function attendanceManager() {
                 return;
             }
 
-            // Try the binarised image first, then a plain high-contrast grayscale
-            // fallback (some cards read better without hard thresholding).
-            let studentId = null;
-            for (const mode of ['binary', 'gray']) {
-                try {
-                    const canvas = preprocessCardImage(img, mode);
-                    const { data } = await this.ocrWorker.recognize(canvas);
-                    studentId = this.extractStudentId((data && data.text) || '');
-                    if (studentId) break;
-                } catch (err) {
-                    console.error('OCR (capture) error:', err);
-                }
-            }
+            const studentId = await this.recognizeCard(img);
 
             this.captureBusy = false;
 
             if (!studentId) {
-                this.captureStatus = 'No ID number found in the photo. Fill the frame with the ID, avoid glare, and keep it in focus — then capture again.';
+                this.captureStatus = 'No ID number found. Move closer so the ID number fills most of the frame, keep it flat and in focus, avoid glare — then capture again.';
                 this.captureStatusType = 'error';
                 this.playSound('error');
                 return;
@@ -784,6 +776,41 @@ function attendanceManager() {
             // Bypass the live-scan cooldown for deliberate captures.
             this.lastScannedId = null;
             this.markAttendance(studentId, 'ocr_scan');
+        },
+
+        // Run OCR over several preprocessing + page-segmentation combinations,
+        // returning as soon as one yields a valid ID. This is what lets a single
+        // captured photo read reliably across lighting/quality differences.
+        async recognizeCard(img) {
+            const PSM = (window.Tesseract && Tesseract.PSM) ? Tesseract.PSM : {};
+            const passes = [
+                { mode: 'binary', psm: PSM.SPARSE_TEXT   || '11' },
+                { mode: 'gray',   psm: PSM.SPARSE_TEXT   || '11' },
+                { mode: 'binary', psm: PSM.SINGLE_BLOCK  || '6'  },
+                { mode: 'gray',   psm: PSM.SINGLE_BLOCK  || '6'  },
+                { mode: 'raw',    psm: PSM.SINGLE_BLOCK  || '6'  },
+                { mode: 'binary', psm: PSM.SINGLE_LINE   || '7'  },
+                { mode: 'raw',    psm: PSM.AUTO          || '3'  }
+            ];
+
+            // Cache each preprocessed canvas so we don't rebuild it per PSM.
+            const canvases = {};
+            let found = null;
+            try {
+                for (const p of passes) {
+                    if (!canvases[p.mode]) { canvases[p.mode] = preprocessCardImage(img, p.mode); }
+                    await this.ocrWorker.setParameters({ tessedit_pageseg_mode: p.psm });
+                    const { data } = await this.ocrWorker.recognize(canvases[p.mode]);
+                    const id = this.extractStudentId((data && data.text) || '');
+                    if (id) { found = id; break; }
+                }
+            } catch (err) {
+                console.error('OCR pass failed', err);
+            } finally {
+                // Restore the default sparse mode for the live scanner.
+                try { await this.ocrWorker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT || '11' }); } catch (e) {}
+            }
+            return found;
         },
 
         processScannedData(scannedText, method = 'scan') {
