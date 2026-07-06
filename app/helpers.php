@@ -123,6 +123,26 @@ if (!function_exists('uploads_path')) {
     }
 }
 
+if (!function_exists('user_avatar')) {
+    /**
+     * URL for a user's avatar (served from the DB via /avatar/{id}), or null
+     * when they haven't uploaded one. Cache-busted by the user's updated_at.
+     */
+    function user_avatar($user): ?string
+    {
+        if (!$user || empty($user->avatar)) {
+            return null;
+        }
+        $v = 0;
+        if (!empty($user->updated_at)) {
+            $v = ($user->updated_at instanceof \DateTimeInterface)
+                ? $user->updated_at->getTimestamp()
+                : (strtotime((string) $user->updated_at) ?: 0);
+        }
+        return base_uri() . '/avatar/' . rawurlencode((string) $user->id) . '?v=' . $v;
+    }
+}
+
 if (!function_exists('brand_logo')) {
     /**
      * Media URL for the configured logo, but only when the file actually

@@ -78,6 +78,32 @@ class MediaController extends Controller
         ]);
     }
 
+    /**
+     * Serve a user's avatar stored in the database (app_files.name = avatar-{id}).
+     */
+    public function avatar($id): Response
+    {
+        $id = (int) $id;
+        try {
+            $row = \App\Core\Database::selectOne(
+                "SELECT `mime`, `data` FROM `app_files` WHERE `name` = ?",
+                ['avatar-' . $id]
+            );
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+
+        if (!$row || ($row['data'] ?? '') === '') {
+            return $this->notFound();
+        }
+
+        return new Response((string) $row['data'], 200, [
+            'Content-Type'   => $row['mime'] ?: 'image/png',
+            'Content-Length' => (string) strlen((string) $row['data']),
+            'Cache-Control'  => 'public, max-age=86400',
+        ]);
+    }
+
     private function notFound(): Response
     {
         return new Response('Not found', 404, ['Content-Type' => 'text/plain']);

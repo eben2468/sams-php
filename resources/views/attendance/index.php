@@ -199,10 +199,10 @@
     <!-- Attendance List -->
     <div x-show="selectedEventId" x-cloak class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         <div class="p-6 border-b border-gray-200">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="text-xl font-bold text-gray-900">Attendance Records</h3>
-                <div class="flex items-center space-x-2">
-                    <input type="text" x-model="searchTerm" @input="filterAttendance()" placeholder="Search students..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <div class="w-full sm:w-auto">
+                    <input type="text" x-model="searchTerm" @input="filterAttendance()" placeholder="Search students..." class="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
             </div>
         </div>

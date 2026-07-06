@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `password`       VARCHAR(255) NOT NULL,
     `role`           ENUM('admin', 'officer', 'supervisor') NOT NULL DEFAULT 'officer',
     `is_active`      TINYINT(1) NOT NULL DEFAULT 1,
+    `avatar`         VARCHAR(255) NULL,
     `remember_token` VARCHAR(100) NULL,
     `created_at`     TIMESTAMP NULL,
     `updated_at`     TIMESTAMP NULL,

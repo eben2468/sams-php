@@ -225,16 +225,21 @@
                             <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                         </button>
 
+                        <?php $__avatar = user_avatar(auth()->user()); ?>
                         <div class="flex items-center space-x-3 pl-4 border-l border-gray-200">
-                            <div class="hidden sm:block text-right">
-                                <p class="text-sm font-semibold text-gray-900"><?= e(auth()->user()->name) ?></p>
+                            <a href="<?= route('profile.edit') ?>" class="hidden sm:block text-right group" title="Edit profile">
+                                <p class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors"><?= e(auth()->user()->name) ?></p>
                                 <p class="text-xs text-gray-500"><?= e(ucfirst(auth()->user()->role)) ?></p>
-                            </div>
-                            <div class="relative">
+                            </a>
+                            <a href="<?= route('profile.edit') ?>" class="relative" title="Edit profile">
+                                <?php if ($__avatar): ?>
+                                <img src="<?= e($__avatar) ?>" alt="Profile" class="w-10 h-10 rounded-xl object-cover shadow-medium hover:shadow-glow transition-all">
+                                <?php else: ?>
                                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-medium hover:shadow-glow transition-all cursor-pointer">
-                                    <?= e(substr(auth()->user()->name, 0, 1)) ?>
+                                    <?= e(strtoupper(substr(auth()->user()->name, 0, 1))) ?>
                                 </div>
-                            </div>
+                                <?php endif; ?>
+                            </a>
                             <form action="<?= route('logout') ?>" method="POST" class="inline">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all" title="Logout">
@@ -248,7 +253,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 px-6 lg:px-8 pb-6 lg:pb-8 overflow-x-hidden max-w-full" style="padding-top: 6rem;">
+            <main class="flex-1 px-3 sm:px-6 lg:px-8 pb-6 lg:pb-8 overflow-x-hidden max-w-full" style="padding-top: 6rem;">
                 <style>
                     @media (min-width: 1024px) { main { padding-top: 5rem !important; } }
                 </style>

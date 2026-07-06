@@ -6,7 +6,7 @@
 <?php section('content'); ?>
 <div class="space-y-8 animate-fade-in">
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="group relative bg-white rounded-xl shadow-soft hover:shadow-strong transition-all duration-300 overflow-hidden card-hover">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-300"></div>
             <div class="relative p-4">

@@ -14,6 +14,7 @@ class User extends Model
         'password',
         'role',
         'is_active',
+        'avatar',
     ];
 
     protected array $hidden = [

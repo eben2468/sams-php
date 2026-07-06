@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SemesterController;
@@ -33,6 +34,9 @@ $router->get('/media', [MediaController::class, 'show'], 'media');
 // Public branding logo — served from the database (filesystem-independent).
 $router->get('/branding/logo', [MediaController::class, 'logo'], 'branding.logo');
 
+// Public user avatar — served from the database.
+$router->get('/avatar/{id}', [MediaController::class, 'avatar'], 'avatar');
+
 // Guest routes
 $router->group(['middleware' => ['guest']], function ($router) {
     $router->get('/login', [AuthController::class, 'showLogin'], 'login');
@@ -45,6 +49,10 @@ $router->group(['middleware' => ['auth']], function ($router) {
 
     // Dashboard
     $router->get('/dashboard', [DashboardController::class, 'index'], 'dashboard');
+
+    // Profile (available to every authenticated user)
+    $router->get('/profile', [ProfileController::class, 'edit'], 'profile.edit');
+    $router->put('/profile', [ProfileController::class, 'update'], 'profile.update');
 
     // Students
     // Registered before the resource route so it is not captured by GET /students/{student}.
