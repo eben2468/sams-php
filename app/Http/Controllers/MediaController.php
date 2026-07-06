@@ -122,12 +122,22 @@ class MediaController extends Controller
         }
 
         $mime = $row['mime'] ?: 'image/png';
-        $b64  = base64_encode((string) $row['data']);
-        $href = 'data:' . $mime . ';base64,' . $b64;
+        $bytes = (string) $row['data'];
 
-        // Show the whole logo (contain, no cropping) centred in the icon.
+        // Trim the transparent (or uniform-colour) border baked into the source
+        // image so the emblem fills the icon without any zooming/cropping of the
+        // artwork itself. Falls back to the original if GD isn't available.
+        $trimmed = $this->trimBorder($bytes);
+        if ($trimmed !== null) {
+            $mime  = 'image/png';
+            $bytes = $trimmed;
+        }
+
+        $href = 'data:' . $mime . ';base64,' . base64_encode($bytes);
+
+        // Fill the whole icon with the (trimmed) logo — 100%, no letterboxing.
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64">'
-             . '<image x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet" '
+             . '<image x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid slice" '
              . 'href="' . $href . '" xlink:href="' . $href . '"/>'
              . '</svg>';
 
@@ -135,6 +145,71 @@ class MediaController extends Controller
             'Content-Type'  => 'image/svg+xml',
             'Cache-Control' => 'public, max-age=86400',
         ]);
+    }
+
+    /**
+     * Crop away the transparent (or uniform-colour) padding around a logo and
+     * return the trimmed PNG bytes. Returns null if GD is unavailable or nothing
+     * could be trimmed.
+     */
+    private function trimBorder(string $bytes): ?string
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        $img = @imagecreatefromstring($bytes);
+        if (!$img) {
+            return null;
+        }
+        imagesavealpha($img, true);
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+
+        // Find the bounding box of visible (non-transparent) pixels. In GD alpha
+        // runs 0 (opaque) .. 127 (fully transparent); treat < 100 as content.
+        $minx = $w; $miny = $h; $maxx = -1; $maxy = -1;
+        $step = max(1, (int) floor(min($w, $h) / 500));
+        for ($y = 0; $y < $h; $y += $step) {
+            for ($x = 0; $x < $w; $x += $step) {
+                $a = (imagecolorat($img, $x, $y) >> 24) & 0x7F;
+                if ($a < 100) {
+                    if ($x < $minx) $minx = $x;
+                    if ($x > $maxx) $maxx = $x;
+                    if ($y < $miny) $miny = $y;
+                    if ($y > $maxy) $maxy = $y;
+                }
+            }
+        }
+
+        // Fully transparent image, or the artwork already fills the canvas.
+        if ($maxx < 0) { imagedestroy($img); return null; }
+
+        // Small safety margin (covers the sampling step) then clamp.
+        $pad  = $step + (int) round(min($w, $h) * 0.01);
+        $minx = max(0, $minx - $pad);
+        $miny = max(0, $miny - $pad);
+        $maxx = min($w - 1, $maxx + $pad);
+        $maxy = min($h - 1, $maxy + $pad);
+        $cw = $maxx - $minx + 1;
+        $ch = $maxy - $miny + 1;
+        if ($cw >= $w && $ch >= $h) { imagedestroy($img); return null; }
+
+        $dst = imagecreatetruecolor($cw, $ch);
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        imagefill($dst, 0, 0, imagecolorallocatealpha($dst, 0, 0, 0, 127));
+        imagecopy($dst, $img, 0, 0, $minx, $miny, $cw, $ch);
+
+        ob_start();
+        imagepng($dst);
+        $out = ob_get_clean();
+
+        imagedestroy($img);
+        imagedestroy($dst);
+
+        return $out !== '' ? $out : null;
     }
 
     private function notFound(): Response
