@@ -801,35 +801,85 @@ function attendanceManager() {
 
         extractStudentId(text) {
             if (!text) return null;
-            const raw = text.toUpperCase();
+            // Flatten to a single A-Z0-9 stream (the number often wraps or sits
+            // next to other card text, and OCR sprinkles spaces/newlines).
+            const s = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (s.length < 8) return null;
 
-            // 1) Try strict patterns on the cleaned string as-is.
-            const direct = this.matchIdPatterns(raw.replace(/\s+/g, ''));
-            if (direct) return direct;
+            // The VVU ID card format is fixed: 3 digits + 2 letters + 8 digits
+            // (e.g. 223EI02003543, 223CS02003501). Treat it as authoritative so
+            // an ambiguous character (a 0 misread as O, etc.) is resolved in
+            // favour of this shape rather than a coincidental different grouping.
+            const primary = this.bestWindowForShape(s, [3, 2, 8]);
+            if (primary) return primary.value;
 
-            // 2) Retry after correcting characters OCR commonly confuses. We only
-            //    apply digit<->letter swaps positionally via the pattern matcher,
-            //    so try a couple of normalized variants and keep the first hit.
-            const variants = [
-                raw.replace(/[^A-Z0-9]/g, ''),
-                raw.replace(/O/g, '0').replace(/[IL]/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2').replace(/[^A-Z0-9]/g, ''),
-                raw.replace(/0/g, 'O').replace(/1/g, 'I').replace(/[^A-Z0-9]/g, '')
-            ];
-            for (const v of variants) {
-                const hit = this.matchIdPatterns(v);
-                if (hit) return hit;
+            // Only if no 3+2+8 window exists at all, consider near shapes for
+            // other cohorts, preferring the fewest corrections.
+            const shapes = [[3, 3, 8], [3, 3, 7], [3, 2, 7], [2, 2, 8], [2, 3, 7]];
+            let best = null;
+            for (const shape of shapes) {
+                const c = this.bestWindowForShape(s, shape);
+                if (c && (!best || c.coercions < best.coercions ||
+                         (c.coercions === best.coercions && c.total > best.total))) {
+                    best = c;
+                }
             }
-            return null;
+            if (best) return best.value;
+
+            // Fallback: rigid patterns that still require embedded letters.
+            return this.matchIdPatterns(s);
+        },
+
+        // For one [digits, letters, digits] shape, find the window that fits with
+        // the fewest character corrections. Each position is coerced to what it
+        // must be (digit vs letter), fixing the swaps OCR makes most often. A
+        // real letter in the letter block is required so plain numbers elsewhere
+        // on the card can't masquerade as an ID.
+        bestWindowForShape(s, shape) {
+            const d1 = shape[0], ln = shape[1], d2 = shape[2];
+            const total = d1 + ln + d2;
+            if (s.length < total) return null;
+
+            // Conservative digit coercion: only letters OCR genuinely confuses
+            // with digits. Coercing common word letters (A, L, T, G...) would let
+            // words like "CALL" masquerade as an ID number.
+            const toDigit = { O: '0', Q: '0', I: '1', S: '5', B: '8', Z: '2' };
+            const toLetter = { '0': 'O', '1': 'I', '2': 'Z', '4': 'A', '5': 'S', '6': 'G', '7': 'T', '8': 'B' };
+            const asDigit = (c) => (c >= '0' && c <= '9') ? c : (toDigit[c] || null);
+            const asLetter = (c) => (c >= 'A' && c <= 'Z') ? c : (toLetter[c] || null);
+
+            let best = null;
+            for (let i = 0; i + total <= s.length; i++) {
+                let out = '', realLetters = 0, coercions = 0, ok = true;
+                for (let k = 0; k < total; k++) {
+                    const c = s[i + k];
+                    let m;
+                    if (k < d1 || k >= d1 + ln) {
+                        m = asDigit(c);
+                        if (m !== null && !(c >= '0' && c <= '9')) coercions++;
+                    } else {
+                        m = asLetter(c);
+                        if (c >= 'A' && c <= 'Z') realLetters++;
+                        else if (m !== null) coercions++;
+                    }
+                    if (m === null) { ok = false; break; }
+                    out += m;
+                }
+                if (ok && realLetters >= 1 && (!best || coercions < best.coercions)) {
+                    best = { value: out, coercions: coercions, total: total };
+                }
+            }
+            return best;
         },
 
         matchIdPatterns(text) {
+            // These all require embedded letters, so a bare phone/date number
+            // can't be mistaken for a student ID.
             let match = text.match(/(\d{2,3}[A-Z]{2,4}\d{2}\d{6})/);
             if (match) return match[1];
             match = text.match(/(\d{2,3}[-\s]?[A-Z]{2,4}[-\s]?\d{2}[-\s]?\d{6})/);
             if (match) return match[1].replace(/[-\s]/g, '');
             match = text.match(/([A-Z]*\d{2,3}[A-Z]{2,4}\d{8,})/);
-            if (match) return match[1];
-            match = text.match(/(\d{10,})/);
             if (match) return match[1];
             return null;
         },
