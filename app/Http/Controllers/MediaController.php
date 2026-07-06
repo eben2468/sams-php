@@ -104,6 +104,39 @@ class MediaController extends Controller
         ]);
     }
 
+    /**
+     * Favicon built from the branding logo. Wraps the logo image in an SVG that
+     * scales it to FILL the icon area (cover), so it appears large in the tab
+     * instead of small with padding.
+     */
+    public function favicon(): Response
+    {
+        try {
+            $row = \App\Core\Database::selectOne("SELECT `mime`, `data` FROM `app_files` WHERE `name` = 'logo'");
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+
+        if (!$row || ($row['data'] ?? '') === '') {
+            return $this->notFound();
+        }
+
+        $mime = $row['mime'] ?: 'image/png';
+        $b64  = base64_encode((string) $row['data']);
+        $href = 'data:' . $mime . ';base64,' . $b64;
+
+        // Show the whole logo (contain, no cropping) centred in the icon.
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64">'
+             . '<image x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet" '
+             . 'href="' . $href . '" xlink:href="' . $href . '"/>'
+             . '</svg>';
+
+        return new Response($svg, 200, [
+            'Content-Type'  => 'image/svg+xml',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+
     private function notFound(): Response
     {
         return new Response('Not found', 404, ['Content-Type' => 'text/plain']);

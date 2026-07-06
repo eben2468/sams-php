@@ -74,11 +74,18 @@ class ProfileController extends Controller
                 'bmp'  => 'image/bmp',
             ][$ext] ?? 'image/png';
 
-            Database::statement(
-                'INSERT INTO `app_files` (`name`, `mime`, `data`) VALUES (?, ?, ?)
-                 ON DUPLICATE KEY UPDATE `mime` = VALUES(`mime`), `data` = VALUES(`data`)',
-                ['avatar-' . $user->id, $mime, $bytes]
-            );
+            ensure_app_files_table();
+            try {
+                Database::statement(
+                    'INSERT INTO `app_files` (`name`, `mime`, `data`) VALUES (?, ?, ?)
+                     ON DUPLICATE KEY UPDATE `mime` = VALUES(`mime`), `data` = VALUES(`data`)',
+                    ['avatar-' . $user->id, $mime, $bytes]
+                );
+            } catch (\Throwable $e) {
+                return redirect()->back()->withErrors([
+                    'avatar' => 'Could not save the picture. Please contact the administrator to run the app_files migration.',
+                ])->withInput($request->all());
+            }
 
             $changes['avatar'] = 'db';
         }

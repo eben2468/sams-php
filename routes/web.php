@@ -37,6 +37,9 @@ $router->get('/branding/logo', [MediaController::class, 'logo'], 'branding.logo'
 // Public user avatar — served from the database.
 $router->get('/avatar/{id}', [MediaController::class, 'avatar'], 'avatar');
 
+// Favicon built from the logo (scaled to fill so it looks large in the tab).
+$router->get('/branding/favicon.svg', [MediaController::class, 'favicon'], 'branding.favicon');
+
 // Guest routes
 $router->group(['middleware' => ['guest']], function ($router) {
     $router->get('/login', [AuthController::class, 'showLogin'], 'login');

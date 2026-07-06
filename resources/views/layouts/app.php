@@ -8,6 +8,12 @@
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <title><?= section_yield('title', 'SAMS - Student Attendance Management System') ?></title>
 
+    <?php if ($appLogo): ?>
+    <link rel="icon" type="image/svg+xml" href="<?= e(route('branding.favicon')) ?>">
+    <link rel="icon" href="<?= e($appLogo) ?>">
+    <link rel="apple-touch-icon" href="<?= e($appLogo) ?>">
+    <?php endif; ?>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 

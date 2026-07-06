@@ -84,11 +84,18 @@ class SystemSettingController extends Controller
             ][$ext] ?? 'image/png';
 
             // Primary store: database (filesystem-independent, survives deploys).
-            \App\Core\Database::statement(
-                'INSERT INTO `app_files` (`name`, `mime`, `data`) VALUES (?, ?, ?)
-                 ON DUPLICATE KEY UPDATE `mime` = VALUES(`mime`), `data` = VALUES(`data`)',
-                ['logo', $mime, $bytes]
-            );
+            ensure_app_files_table();
+            try {
+                \App\Core\Database::statement(
+                    'INSERT INTO `app_files` (`name`, `mime`, `data`) VALUES (?, ?, ?)
+                     ON DUPLICATE KEY UPDATE `mime` = VALUES(`mime`), `data` = VALUES(`data`)',
+                    ['logo', $mime, $bytes]
+                );
+            } catch (\Throwable $e) {
+                return redirect()->back()->withErrors([
+                    'logo' => 'Could not save the logo to the database. Please contact the administrator to run the app_files migration.',
+                ]);
+            }
 
             // Best-effort: also keep a file copy so the static/media path works
             // too. Ignored if the uploads directory is not writable.

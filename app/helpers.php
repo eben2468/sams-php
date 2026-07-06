@@ -123,6 +123,36 @@ if (!function_exists('uploads_path')) {
     }
 }
 
+if (!function_exists('ensure_app_files_table')) {
+    /**
+     * Make sure the app_files table (binary store for logo/avatars) exists.
+     * Idempotent and safe to call before any write, so a fresh deployment
+     * doesn't fatal with "table doesn't exist".
+     */
+    function ensure_app_files_table(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        try {
+            \App\Core\Database::statement(
+                'CREATE TABLE IF NOT EXISTS `app_files` (
+                    `name`       VARCHAR(100) NOT NULL,
+                    `mime`       VARCHAR(100) NOT NULL,
+                    `data`       LONGBLOB NOT NULL,
+                    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`name`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            $done = true;
+        } catch (\Throwable $e) {
+            // Insufficient privileges or similar — the caller will surface a
+            // friendly error when its own write fails.
+        }
+    }
+}
+
 if (!function_exists('user_avatar')) {
     /**
      * URL for a user's avatar (served from the DB via /avatar/{id}), or null
