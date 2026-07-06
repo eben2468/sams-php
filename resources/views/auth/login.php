@@ -15,12 +15,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
-        <?php $appLogo = \App\Models\SystemSetting::get('logo'); ?>
+        <?php $appLogo = brand_logo(); ?>
         <?php $appName = \App\Models\SystemSetting::get('app_name', 'SAMS'); ?>
         <div class="text-center mb-8">
             <?php if ($appLogo): ?>
             <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-xl mb-4 shadow-sm overflow-hidden">
-                <img src="<?= e(media($appLogo)) ?>" alt="Logo" class="w-full h-full object-contain">
+                <img src="<?= e($appLogo) ?>" alt="Logo" class="w-full h-full object-contain">
             </div>
             <?php else: ?>
             <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-700 rounded-xl mb-4">

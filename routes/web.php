@@ -30,6 +30,9 @@ $router->get('/', function () {
 // logos and photos display even on hosts that don't serve uploads statically.
 $router->get('/media', [MediaController::class, 'show'], 'media');
 
+// Public branding logo — served from the database (filesystem-independent).
+$router->get('/branding/logo', [MediaController::class, 'logo'], 'branding.logo');
+
 // Guest routes
 $router->group(['middleware' => ['guest']], function ($router) {
     $router->get('/login', [AuthController::class, 'showLogin'], 'login');

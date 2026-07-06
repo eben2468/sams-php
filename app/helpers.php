@@ -115,6 +115,47 @@ if (!function_exists('media')) {
     }
 }
 
+if (!function_exists('uploads_path')) {
+    function uploads_path(string $relative = ''): string
+    {
+        $relative = ltrim(str_replace('\\', '/', $relative), '/');
+        return dirname(__DIR__) . '/public/uploads' . ($relative === '' ? '' : '/' . $relative);
+    }
+}
+
+if (!function_exists('brand_logo')) {
+    /**
+     * Media URL for the configured logo, but only when the file actually
+     * exists on this server. Returns null otherwise so views fall back to the
+     * default icon instead of rendering a broken image.
+     */
+    function brand_logo(): ?string
+    {
+        // Prefer the database-stored logo — independent of the filesystem, so
+        // it works on hosts where public/uploads is not writable or not served.
+        try {
+            $row = \App\Core\Database::selectOne("SELECT `updated_at` FROM `app_files` WHERE `name` = 'logo'");
+            if ($row) {
+                $v = isset($row['updated_at']) ? (strtotime((string) $row['updated_at']) ?: time()) : time();
+                return base_uri() . '/branding/logo?v=' . $v;
+            }
+        } catch (\Throwable $e) {
+            // app_files table may not exist yet — fall back to the file below.
+        }
+
+        // Fall back to a file under public/uploads, only if it actually exists.
+        try {
+            $logo = \App\Models\SystemSetting::get('logo');
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if (!$logo || $logo === 'db') {
+            return null;
+        }
+        return is_file(uploads_path($logo)) ? media($logo) : null;
+    }
+}
+
 if (!function_exists('route')) {
     function route(string $name, $parameters = []): string
     {

@@ -161,4 +161,14 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
     PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Binary assets stored in the database (e.g. the branding logo) so they do not
+-- depend on the filesystem being writable or served on the host.
+CREATE TABLE IF NOT EXISTS `app_files` (
+    `name`       VARCHAR(100) NOT NULL,
+    `mime`       VARCHAR(100) NOT NULL,
+    `data`       LONGBLOB NOT NULL,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

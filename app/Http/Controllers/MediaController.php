@@ -55,6 +55,29 @@ class MediaController extends Controller
         ]);
     }
 
+    /**
+     * Serve the branding logo stored in the database (app_files.name = 'logo').
+     * Works regardless of filesystem writability or static serving on the host.
+     */
+    public function logo(): Response
+    {
+        try {
+            $row = \App\Core\Database::selectOne("SELECT `mime`, `data` FROM `app_files` WHERE `name` = 'logo'");
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+
+        if (!$row || ($row['data'] ?? '') === '') {
+            return $this->notFound();
+        }
+
+        return new Response((string) $row['data'], 200, [
+            'Content-Type'   => $row['mime'] ?: 'image/png',
+            'Content-Length' => (string) strlen((string) $row['data']),
+            'Cache-Control'  => 'public, max-age=86400',
+        ]);
+    }
+
     private function notFound(): Response
     {
         return new Response('Not found', 404, ['Content-Type' => 'text/plain']);

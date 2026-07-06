@@ -62,42 +62,46 @@ class SystemSettingController extends Controller
         $changed = ['app_name' => $validated['app_name']];
 
         if ($request->hasFile('logo')) {
-            $uploadsDir = dirname(__DIR__, 3) . '/public/uploads';
+            $file = $request->file('logo');
 
-            // Fail loudly (instead of saving a broken path) if the uploads
-            // directory is not writable on this server — the usual cause of a
-            // logo that "uploads" but never displays on a live host.
-            if (!is_dir($uploadsDir . '/branding') && !@mkdir($uploadsDir . '/branding', 0775, true) && !is_dir($uploadsDir . '/branding')) {
+            // Read the uploaded bytes straight from the temp file so storing the
+            // logo does not depend on public/uploads being writable on the host.
+            $bytes = @file_get_contents($file->getRealPath());
+            if ($bytes === false || $bytes === '') {
                 return redirect()->back()->withErrors([
-                    'logo' => 'Could not save the logo: the uploads folder is not writable. On the server run: chmod -R 775 public/uploads',
+                    'logo' => 'Could not read the uploaded logo. Please try a different image.',
                 ]);
             }
 
-            $path = $request->file('logo')->store('branding');
-            $absolute = $uploadsDir . '/' . ltrim($path, '/');
+            $ext  = strtolower($file->getClientOriginalExtension());
+            $mime = [
+                'png'  => 'image/png',
+                'jpg'  => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'gif'  => 'image/gif',
+                'webp' => 'image/webp',
+                'bmp'  => 'image/bmp',
+            ][$ext] ?? 'image/png';
 
-            // Confirm the file actually landed on disk before committing the setting.
-            if (!is_file($absolute)) {
-                return redirect()->back()->withErrors([
-                    'logo' => 'Could not save the logo file. Check that public/uploads is writable by the web server.',
-                ]);
-            }
-
-            // New logo is safely stored — now remove the previous one.
-            $existing = SystemSetting::get('logo');
-            if ($existing && $existing !== $path) {
-                $old = $uploadsDir . '/' . ltrim($existing, '/');
-                if (is_file($old)) {
-                    @unlink($old);
-                }
-            }
-
-            SystemSetting::updateOrCreate(
-                ['key' => 'logo'],
-                ['value' => $path]
+            // Primary store: database (filesystem-independent, survives deploys).
+            \App\Core\Database::statement(
+                'INSERT INTO `app_files` (`name`, `mime`, `data`) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE `mime` = VALUES(`mime`), `data` = VALUES(`data`)',
+                ['logo', $mime, $bytes]
             );
 
-            $changed['logo'] = $path;
+            // Best-effort: also keep a file copy so the static/media path works
+            // too. Ignored if the uploads directory is not writable.
+            try {
+                $file->store('branding');
+            } catch (\Throwable $e) {
+                // no-op — the database copy above is authoritative
+            }
+
+            // Marker so the file-based fallback knows the logo lives in the DB.
+            SystemSetting::updateOrCreate(['key' => 'logo'], ['value' => 'db']);
+
+            $changed['logo'] = 'db (' . strlen($bytes) . ' bytes)';
         }
 
         AuditLog::create([
